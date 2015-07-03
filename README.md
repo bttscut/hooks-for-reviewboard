@@ -1,13 +1,15 @@
-# reviewboard-svn-hooks
+# hooks-for-reviewboard
 for code review based on ReviewBoard
 
-## requirement
+## SVN
+
+### requirement
 1. python 2.7.* whatever
 2. install RBTools 0.7.4
 
     	https://www.reviewboard.org/downloads/rbtools/#linux
 
-## config
+### config
 * logpath
 
 		filepath to write log
@@ -35,3 +37,10 @@ for code review based on ReviewBoard
 * branch_pattern
 
 		 pattern to parse the rb repo branch according to the changed dirs
+
+## GIT
+
+to be continued
+
+
+  
