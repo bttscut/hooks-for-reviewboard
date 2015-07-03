@@ -1,7 +1,6 @@
 # hooks-for-reviewboard
 for code review based on ReviewBoard
 
-## SVN
 
 ### requirement
 1. python 2.7.* whatever
@@ -36,11 +35,5 @@ for code review based on ReviewBoard
 
 * branch_pattern
 
-		 pattern to parse the rb repo branch according to the changed dirs
+		pattern to parse the rb repo branch according to the changed dirs
 
-## GIT
-
-to be continued
-
-
-  
