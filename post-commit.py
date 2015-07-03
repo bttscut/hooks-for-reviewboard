@@ -24,6 +24,9 @@ rbadminpw = "123456"
 
 # filter
 filter_suffixs = (".cs", ".java", ".c", ".h", ".cpp", ".hpp", ".m", ".mm", ".manifest", ".lua", ".proto", ".py", ".js")
+
+# branch pattern
+branch_pattern = "branch/((?:r101)/.+?)/"
 #-----------------------config-------------------------
 
 INDEX_FILE_RE = re.compile(b'^Index: (.+?)(?:\t\((added|deleted)\))?\n$')
@@ -83,14 +86,27 @@ def _process_diff(diff):
             ret.append(line)
     return os.linesep.join(ret)
 
+def _process_branch(path):
+    m = re.search(branch_pattern, path)
+    if m:
+        return m.group(1)
+    return None
+
 def run():
     # 接收hook参数
     repo = sys.argv[1]
     rev = sys.argv[2]
-
-    # 检查是否有代码文件
-    interested = False
     look_args = " -r %s %s"%(rev, repo)
+
+    # 是否为感兴趣的分支
+    cmd = "svnlook dirs-changed %s"%look_args
+    changed_dir = call_cmd(cmd).split(os.linesep)[0].strip() # 取第一行即可
+    repo_branch = _process_branch(changed_dir)
+    if not repo_branch:
+        exit()
+
+    # 是否有代码文件
+    interested = False
     cmd = "svnlook changed %s"%look_args
     files = call_cmd(cmd)
     for f in files.split(os.linesep):
@@ -99,14 +115,9 @@ def run():
             interested = True
             break
     if not interested:
-        info("no review")
         exit()
     
     # 提取rbt post信息
-    cmd = "svnlook dirs-changed %s"%look_args
-    changed_dir = call_cmd(cmd).split(os.linesep)[0].strip() # 取第一行即可
-    repo_branch = changed_dir
-
     cmd = "svnlook author %s"%look_args
     author = call_cmd(cmd)
     if author in AUTHOR_MAP:
