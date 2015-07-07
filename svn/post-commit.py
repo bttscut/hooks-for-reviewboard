@@ -4,7 +4,6 @@
 import os, sys
 import re
 import subprocess
-import pymongo
 import logging
 import logging.handlers
 import traceback
@@ -70,8 +69,8 @@ error = logger.error
 info = logger.info
 
 def _process_diff(diff):
-    pattern = r"^(Added|Deleted|Copied|Modified):.*%s%s"%(os.linesep, INDEX_SEP)
-    diff = re.sub(pattern, "Index:", diff, 0, re.M)
+    pattern = r"^(?:Added|Deleted|Copied|Modified)(:.*?%s%s)"%(os.linesep, INDEX_SEP)
+    diff = re.sub(pattern, r"Index\1", diff, 0, re.M)
     pattern = r"\(Binary files differ\)"
     diff = re.sub(pattern, "Cannot display: file marked as a binary type.", diff, 0, re.M)
     ret = []
@@ -110,7 +109,6 @@ def run():
     cmd = "svnlook changed %s"%look_args
     files = call_cmd(cmd)
     for f in files.split(os.linesep):
-        info(f)
         if f.strip().endswith(filter_suffixs):
             interested = True
             break
