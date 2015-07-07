@@ -4,24 +4,21 @@
 import os, sys
 import re
 import subprocess
+from datetime import datetime
 import pymongo
 import logging
 import logging.handlers
 import traceback
-from rbtools.api.client import RBClient
-from rbtools.api.errors import APIError
-import pymongo
 
 #-----------------------config-------------------------
 # log
 logpath = "/var/log/rb/ttlz-git.log"
 
-# rbconfig
-rbcfg_path = "/home/act/dev/test/rbt/rbconfig.py"
-rbserver = "http://bttrb.com"
-rbrepo = "git-test"
-rbadmin = "bttrb"
-rbadminpw = "123456"
+# mongodb
+host = "172.16.101.243"
+port = 27037
+dbname = "reviewboard"
+colname = "git"
 #-----------------------config-------------------------
 
 def exit(msg=None):
@@ -49,65 +46,27 @@ def init_logger():
     logger.setLevel(logging.INFO)
     return logger
 
-# 读取配置
-rbconfig = {}
-execfile(rbcfg_path, {}, rbconfig)
-REVIEWER_MAP = rbconfig["ReviewerMap"]
-AUTHOR_MAP = rbconfig["AuthorMap"]
-
 logger = init_logger()
 error = logger.error
 info = logger.info
 
 def run():
-    info(os.getcwd())
     cis = sys.stdin.readline().strip().split()[:3]
     old_value = cis[0]
     new_value = cis[1]
     ref = cis[2]
-    diff = call_cmd("git diff %s..%s"%(old_value, new_value))
-    info(diff)
-
-    ci_range = "%s..%s"%(old_value, new_value)
-    # get author name
-    cmd = "git log --format=%cn -1 " + new_value
-    author = call_cmd(cmd)
-    if author in AUTHOR_MAP:
-        author = AUTHOR_MAP[author]
-    reviewer = REVIEWER_MAP[author]
-
-    # get summary desc
-    cmd = "git log --format=%s " + ci_range
-    logs = call_cmd(cmd)
-    summary = logs.split(os.linesep)[-1]
-    cmd = "git log --pretty=fuller " + ci_range
-    desc = call_cmd(cmd)
-
-    repo_branch = ref
-
-    # 创建review_request
-    client = RBClient(rbserver, username=rbadmin, password=rbadminpw)
-    root = client.get_root()
-    request_data = {
-            "repository" : rbrepo,
-            "submit_as" : author,
+    doc = {
+            "ref":ref,
+            "old_value":old_value,
+            "new_value":new_value,
+            "time":datetime.utctime(),
+            "kill":False,
             }
-    r = root.get_review_requests().create(**request_data)
-    vl = root.get_diff_validation()
-    basedir = "/"
-    #info("------------------"+diff)
-    vl.validate_diff(rbrepo, diff, base_dir=basedir)
-    r.get_diffs().upload_diff(diff, base_dir=basedir)
-    draft = r.get_draft()
-    update_data = {
-            "branch" : repo_branch,
-            "summary" : summary,
-            "description" : desc,
-            "target_people" : reviewer,
-            "public" : True,
-            }
-            
-    ret = draft.update(**update_data)
+    client = pymongo.MongoClient(host, port, w=1, j=True)
+    col = client[dbname][colname]
+    ret = col.insert_one(doc)
+    logmsg = "host[%s]-port[%d]-db[%s]-col[%s]-doc[%s]"%(host, port, dbname, colname, doc)
+    info(logmsg)
 
 try:
     run()
