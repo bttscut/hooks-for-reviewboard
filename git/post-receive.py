@@ -59,7 +59,7 @@ def run():
             "ref":ref,
             "old_value":old_value,
             "new_value":new_value,
-            "time":datetime.utctime(),
+            "time":datetime.utcnow(),
             "kill":False,
             }
     client = pymongo.MongoClient(host, port, w=1, j=True)
