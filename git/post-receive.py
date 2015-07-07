@@ -10,23 +10,22 @@ import logging
 import logging.handlers
 import traceback
 
-#-----------------------config-------------------------
-# log
-logpath = "/var/log/rb/ttlz-git.log"
-
-# mongodb
-host = "172.16.101.243"
-port = 27037
-dbname = "reviewboard"
-colname = "git"
-#-----------------------config-------------------------
-
 def exit(msg=None):
     if msg:
         print >> sys.stderr, msg
         sys.exit(1)
     else:
         sys.exit(0)
+
+if len(sys.argv) != 3:
+    exit("args error")
+
+rbcfg_path = sys.argv[1]
+ci_info = sys.argv[2]
+
+# 读取配置
+rbcfg = {}
+execfile(rbcfg_path, {}, rbcfg)
 
 new_env = {}
 new_env["LC_ALL"] = "en_US.UTF-8"
@@ -37,7 +36,7 @@ def call_cmd(cmd):
     return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env).strip()
 
 def init_logger():
-    handler = logging.handlers.RotatingFileHandler(logpath, maxBytes = 5*1024*1024, backupCount = 5)
+    handler = logging.handlers.RotatingFileHandler(rbcfg["logpath"], maxBytes = 5*1024*1024, backupCount = 5)
     fmt = "%(asctime)s [%(name)s] %(filename)s[line:%(lineno)d] %(levelname)s %(message)s"
     formatter = logging.Formatter(fmt)
     handler.setFormatter(formatter)
@@ -51,7 +50,7 @@ error = logger.error
 info = logger.info
 
 def run():
-    cis = sys.stdin.readline().strip().split()[:3]
+    cis = ci_info.strip().split()[:3]
     old_value = cis[0]
     new_value = cis[1]
     ref = cis[2]
@@ -62,6 +61,10 @@ def run():
             "time":datetime.utcnow(),
             "kill":False,
             }
+    host = rbcfg["host"]
+    port = rbcfg["port"]
+    dbname = rbcfg["dbname"]
+    colname = rbcfg["colname"]
     client = pymongo.MongoClient(host, port, w=1, j=True)
     col = client[dbname][colname]
     ret = col.insert_one(doc)

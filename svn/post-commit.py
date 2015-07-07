@@ -10,27 +10,6 @@ import traceback
 from rbtools.api.client import RBClient
 from rbtools.api.errors import APIError
 
-#-----------------------config-------------------------
-# log
-logpath = "/var/log/rb/ttlz-svn.log"
-
-# rbconfig
-rbcfg_path = "/home/act/dev/test/rbt/rbconfig.py"
-rbserver = "http://bttrb.com"
-rbrepo = "svn-test"
-rbadmin = "bttrb"
-rbadminpw = "123456"
-
-# filter
-filter_suffixs = (".cs", ".java", ".c", ".h", ".cpp", ".hpp", ".m", ".mm", ".manifest", ".lua", ".proto", ".py", ".js")
-
-# branch pattern
-branch_pattern = "branch/((?:r101)/.+?)/"
-#-----------------------config-------------------------
-
-INDEX_FILE_RE = re.compile(b'^Index: (.+?)(?:\t\((added|deleted)\))?\n$')
-INDEX_SEP = b'=' * 67
-
 def exit(msg=None):
     if msg:
         print >> sys.stderr, msg
@@ -38,18 +17,34 @@ def exit(msg=None):
     else:
         sys.exit(0)
 
-#exit("coming soon")
+
+# 接收hook参数
+if len(sys.argv) != 4:
+    exit("args error")
+rbcfg_path = sys.argv[1]
+repo = sys.argv[2]
+rev = sys.argv[3]
+
+INDEX_FILE_RE = re.compile(b'^Index: (.+?)(?:\t\((added|deleted)\))?\n$')
+INDEX_SEP = b'=' * 67
 
 new_env = {}
 new_env["LC_ALL"] = "en_US.UTF-8"
 new_env["LANGUAGE"] = "en_US.UTF-8"
+
+# 读取配置
+rbcfg = {}
+execfile(rbcfg_path, {}, rbcfg)
+REVIEWER_MAP = rbcfg["ReviewerMap"]
+AUTHOR_MAP = rbcfg["AuthorMap"]
+
 
 def call_cmd(cmd):
     print(cmd)
     return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env)
 
 def init_logger():
-    handler = logging.handlers.RotatingFileHandler(logpath, maxBytes = 5*1024*1024, backupCount = 5)
+    handler = logging.handlers.RotatingFileHandler(rbcfg["logpath"], maxBytes = 5*1024*1024, backupCount = 5)
     fmt = "%(asctime)s [%(name)s] %(filename)s[line:%(lineno)d] %(levelname)s %(message)s"
     formatter = logging.Formatter(fmt)
     handler.setFormatter(formatter)
@@ -57,12 +52,6 @@ def init_logger():
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
     return logger
-
-# 读取配置
-rbconfig = {}
-execfile(rbcfg_path, {}, rbconfig)
-REVIEWER_MAP = rbconfig["ReviewerMap"]
-AUTHOR_MAP = rbconfig["AuthorMap"]
 
 logger = init_logger()
 error = logger.error
@@ -80,21 +69,18 @@ def _process_diff(diff):
         m = INDEX_FILE_RE.match(line)
         if m:
             fn = m.group(1)
-            has_file = fn.endswith(filter_suffixs)
+            has_file = fn.endswith(rbcfg["filter_suffixs"])
         if has_file:
             ret.append(line)
     return os.linesep.join(ret)
 
 def _process_branch(path):
-    m = re.search(branch_pattern, path)
+    m = re.search(rbcfg["branch_pattern"], path)
     if m:
         return m.group(1)
     return None
 
 def run():
-    # 接收hook参数
-    repo = sys.argv[1]
-    rev = sys.argv[2]
     look_args = " -r %s %s"%(rev, repo)
 
     # 是否为感兴趣的分支
@@ -109,7 +95,7 @@ def run():
     cmd = "svnlook changed %s"%look_args
     files = call_cmd(cmd)
     for f in files.split(os.linesep):
-        if f.strip().endswith(filter_suffixs):
+        if f.strip().endswith(rbcfg["filter_suffixs"]):
             interested = True
             break
     if not interested:
@@ -133,18 +119,18 @@ def run():
     #info("\n"+diff)
 
     # 创建review_request
-    client = RBClient(rbserver, username=rbadmin, password=rbadminpw)
+    client = RBClient(rbcfg["rbserver"], username=rbcfg["rbadmin"], password=rbcfg["rbadminpw"])
     root = client.get_root()
     request_data = {
-            "repository" : rbrepo,
-            "commit_id" : rev,
+            "repository" : rbcfg["rbrepo"],
+            #"commit_id" : rev,
             "submit_as" : author,
             }
     r = root.get_review_requests().create(**request_data)
     vl = root.get_diff_validation()
     basedir = "/"
     #info("------------------"+diff)
-    vl.validate_diff(rbrepo, diff, base_dir=basedir)
+    vl.validate_diff(rbcfg["rbrepo"], diff, base_dir=basedir)
     r.get_diffs().upload_diff(diff, base_dir=basedir)
     draft = r.get_draft()
     update_data = {
@@ -156,13 +142,13 @@ def run():
             }
             
     ret = draft.update(**update_data)
-    info("repo:<%s> rev:<%s> rid:<%s>"%(rbserver, rev, r.id))
+    info("repo:<%s> rev:<%s> rid:<%s>"%(rbcfg["rbserver"], rev, r.id))
     
 
 try:
     run()
 except Exception, e:
-    error("exception:%s \ntraceback:%s"%(e, traceback.format_exc()))
+    error("rev:<%s> exception:%s \ntraceback:%s"%(rev, e, traceback.format_exc()))
     exit("see server log")
 
 exit()

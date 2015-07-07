@@ -11,27 +11,6 @@ from rbtools.api.client import RBClient
 from rbtools.api.errors import APIError
 import pymongo
 
-#-----------------------config-------------------------
-# log
-logpath = "/var/log/rb/ttlz-git.log"
-
-# repo
-repo_path = "/home/act/dev/test/repo/git/rb"
-
-# mongodb
-host = "172.16.100.164"
-port = 27037
-dbname = "reviewboard"
-colname = "git"
-
-# rbconfig
-rbcfg_path = "/home/act/dev/test/rbt/rbconfig.py"
-rbserver = "http://bttrb.com"
-rbrepo = "git-test"
-rbadmin = "bttrb"
-rbadminpw = "123456"
-#-----------------------config-------------------------
-
 def exit(msg=None):
     if msg:
         print >> sys.stderr, msg
@@ -39,16 +18,27 @@ def exit(msg=None):
     else:
         sys.exit(0)
 
+if len(sys.argv) != 2:
+    exit("args error")
+
+rbcfg_path = sys.argv[1]
+
 new_env = {}
 new_env["LC_ALL"] = "en_US.UTF-8"
 new_env["LANGUAGE"] = "en_US.UTF-8"
+
+# 读取配置
+rbcfg = {}
+execfile(rbcfg_path, {}, rbcfg)
+REVIEWER_MAP = rbcfg["ReviewerMap"]
+AUTHOR_MAP = rbcfg["AuthorMap"]
 
 def call_cmd(cmd):
     print(cmd)
     return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env)
 
 def init_logger():
-    handler = logging.handlers.RotatingFileHandler(logpath, maxBytes = 5*1024*1024, backupCount = 5)
+    handler = logging.handlers.RotatingFileHandler(rbcfg["logpath"], maxBytes = 5*1024*1024, backupCount = 5)
     fmt = "%(asctime)s [%(name)s] %(filename)s[line:%(lineno)d] %(levelname)s %(message)s"
     formatter = logging.Formatter(fmt)
     handler.setFormatter(formatter)
@@ -56,12 +46,6 @@ def init_logger():
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
     return logger
-
-# 读取配置
-rbconfig = {}
-execfile(rbcfg_path, {}, rbconfig)
-REVIEWER_MAP = rbconfig["ReviewerMap"]
-AUTHOR_MAP = rbconfig["AuthorMap"]
 
 logger = init_logger()
 error = logger.error
@@ -91,17 +75,17 @@ def run(old_value, new_value, ref):
     repo_branch = ref
 
     # 创建review_request
-    client = RBClient(rbserver, username=rbadmin, password=rbadminpw)
+    client = RBClient(rbcfg["rbserver"], username=rbcfg["rbadmin"], password=rbcfg["rbadminpw"])
     root = client.get_root()
     request_data = {
-            "repository" : rbrepo,
+            "repository" : rbcfg["rbrepo"],
             "submit_as" : author,
             }
     r = root.get_review_requests().create(**request_data)
     vl = root.get_diff_validation()
     basedir = "/"
     #info("------------------"+diff)
-    vl.validate_diff(rbrepo, diff, base_dir=basedir)
+    vl.validate_diff(rbcfg["rbrepo"], diff, base_dir=basedir)
     r.get_diffs().upload_diff(diff, base_dir=basedir)
     draft = r.get_draft()
     update_data = {
@@ -113,15 +97,15 @@ def run(old_value, new_value, ref):
             }
             
     ret = draft.update(**update_data)
-    info("repo:<%s> rev:<%s> rid:<%s>"%(rbserver, ci_range, r.id))
+    info("repo:<%s> rev:<%s> rid:<%s>"%(rbcfg["rbserver"], ci_range, r.id))
 
-client = pymongo.MongoClient(host, port, w=1, j=True)
-col = client[dbname][colname]
+client = pymongo.MongoClient(rbcfg["host"], rbcfg["port"], w=1, j=True)
+col = client[rbcfg["dbname"]][rbcfg["colname"]]
 it = col.find({"kill":False}, sort = [("time", pymongo.ASCENDING)])
 if it.count() == 0:
     exit()
 
-os.chdir(repo_path)
+os.chdir(rbcfg["repo_path"])
 call_cmd("git pull")
 has_err = False
 _ids = []

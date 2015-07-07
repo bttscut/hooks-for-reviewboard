@@ -37,6 +37,9 @@ for code review based on ReviewBoard
 
 		pattern to parse the rb repo branch according to the changed dirs
 
+### usage
+使用者只需要将对应的仓库端参数和配置文件路径传给py脚本即可，具体的hook和cron脚本可以用很简单的shell脚本实现。
+
 ### svn
 在仓库端试用svnlook命令来生成diff并提交，因为仓库段有所有的信息，所以这样比较方便。
 
