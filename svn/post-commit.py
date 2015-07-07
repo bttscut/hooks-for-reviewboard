@@ -46,7 +46,7 @@ new_env["LANGUAGE"] = "en_US.UTF-8"
 
 def call_cmd(cmd):
     print(cmd)
-    return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env).strip()
+    return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env)
 
 def init_logger():
     handler = logging.handlers.RotatingFileHandler(logpath, maxBytes = 5*1024*1024, backupCount = 5)
@@ -117,16 +117,14 @@ def run():
     
     # 提取rbt post信息
     cmd = "svnlook author %s"%look_args
-    author = call_cmd(cmd)
+    author = call_cmd(cmd).strip()
     if author in AUTHOR_MAP:
         author = AUTHOR_MAP[author]
     reviewer = REVIEWER_MAP[author]
 
     cmd = "svnlook log %s"%look_args
     log = call_cmd(cmd)
-    summary = desc = log
-    summary = summary.replace("\"", "@")
-    desc = desc.replace("\"", "@")
+    summary = desc = log.strip().replace(os.linesep, "&").replace("\"", "@")
     summary = "rev:%s-[%s]"%(rev, summary)
 
     cmd = "svnlook diff %s"%look_args

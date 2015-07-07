@@ -45,7 +45,7 @@ new_env["LANGUAGE"] = "en_US.UTF-8"
 
 def call_cmd(cmd):
     print(cmd)
-    return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env).strip()
+    return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env)
 
 def init_logger():
     handler = logging.handlers.RotatingFileHandler(logpath, maxBytes = 5*1024*1024, backupCount = 5)
@@ -74,7 +74,7 @@ def run(old_value, new_value, ref):
     ci_range = "%s..%s"%(old_value, new_value)
     # get author name
     cmd = "git log --format=%cn -1 " + new_value
-    author = call_cmd(cmd)
+    author = call_cmd(cmd).strip()
     if author in AUTHOR_MAP:
         author = AUTHOR_MAP[author]
     reviewer = REVIEWER_MAP[author]
