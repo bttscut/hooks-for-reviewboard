@@ -35,6 +35,11 @@ AUTHOR_MAP = rbcfg["AuthorMap"]
 
 def call_cmd(cmd):
     print(cmd)
+    if sys.version_info[0] == 2 and sys.version_info[1] < 7:
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, env=new_env)
+        if p.wait() != 0:
+            raise Exception("%s failed"%cmd)
+        return p.stdout.read()
     return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env)
 
 def init_logger():
@@ -66,7 +71,7 @@ def run(old_value, new_value, ref):
     # get summary desc
     cmd = "git log --format=%s " + ci_range
     logs = call_cmd(cmd)
-    summary = logs.split(os.linesep)[-1]
+    summary = logs.split(os.linesep)[0]
     cmd = "git log --pretty=fuller " + ci_range
     desc = call_cmd(cmd)
     summary = summary.replace("\"", "@")
