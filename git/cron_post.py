@@ -77,7 +77,7 @@ def run(old_value, new_value, ref):
     summary = summary.replace("\"", "@")
     desc = desc.replace("\"", "@")
 
-    repo_branch = ref
+    repo_branch = ref.split("/")[-1]
 
     # 创建review_request
     client = RBClient(rbcfg["rbserver"], username=rbcfg["rbadmin"], password=rbcfg["rbadminpw"])
