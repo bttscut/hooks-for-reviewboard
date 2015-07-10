@@ -37,9 +37,10 @@ def call_cmd(cmd):
     print(cmd)
     if sys.version_info[0] == 2 and sys.version_info[1] < 7:
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, env=new_env)
-        if p.wait() != 0:
-            raise Exception("%s failed"%cmd)
-        return p.stdout.read()
+        out, err = p.communicate()
+        if p.returncode != 0:
+            raise Exception("%s failed\nerr:<%s>"%(cmd, err))
+        return out
     return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env)
 
 def init_logger():
@@ -50,6 +51,10 @@ def init_logger():
     logger = logging.getLogger('ttlzrb')
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
+    #console = logging.StreamHandler()
+    #console.setLevel(logging.INFO)
+    #console.setFormatter(formatter)
+    #logger.addHandler(console)
     return logger
 
 logger = init_logger()
