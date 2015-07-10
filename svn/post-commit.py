@@ -5,7 +5,7 @@ import os, sys
 import re
 import subprocess
 import logging
-import logging.handlers
+import logging.config
 import traceback
 from rbtools.api.client import RBClient
 from rbtools.api.errors import APIError

@@ -7,7 +7,7 @@ import subprocess
 from datetime import datetime
 import pymongo
 import logging
-import logging.handlers
+import logging.config
 import traceback
 
 def exit(msg=None):
