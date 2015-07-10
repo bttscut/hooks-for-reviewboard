@@ -5,7 +5,7 @@ import os, sys
 import re
 import subprocess
 import logging
-import logging.handlers
+import logging.config
 import traceback
 from rbtools.api.client import RBClient
 from rbtools.api.errors import APIError
@@ -44,17 +44,8 @@ def call_cmd(cmd):
     return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env)
 
 def init_logger():
-    handler = logging.handlers.RotatingFileHandler(rbcfg["logpath"], maxBytes = 5*1024*1024, backupCount = 5)
-    fmt = "%(asctime)s [%(name)s] %(filename)s[line:%(lineno)d] %(levelname)s %(message)s"
-    formatter = logging.Formatter(fmt)
-    handler.setFormatter(formatter)
-    logger = logging.getLogger('ttlzrb')
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
-    #console = logging.StreamHandler()
-    #console.setLevel(logging.INFO)
-    #console.setFormatter(formatter)
-    #logger.addHandler(console)
+    logging.config.fileConfig(rbcfg["logconf"])
+    logger = logging.getLogger("root")
     return logger
 
 logger = init_logger()

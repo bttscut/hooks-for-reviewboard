@@ -1,7 +1,7 @@
 #coding=utf8
 
 # log
-logpath = "/var/log/rb/ttlz-svn.log"
+logconf = "/home/act/dev/gitrepo/rbhook/git/log.conf"
 
 # rbconfig
 rbcfg_path = "/home/act/dev/test/rbt/rbconfig.py"

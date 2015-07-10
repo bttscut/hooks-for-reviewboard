@@ -36,13 +36,8 @@ def call_cmd(cmd):
     return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, env=new_env).strip()
 
 def init_logger():
-    handler = logging.handlers.RotatingFileHandler(rbcfg["logpath"], maxBytes = 5*1024*1024, backupCount = 5)
-    fmt = "%(asctime)s [%(name)s] %(filename)s[line:%(lineno)d] %(levelname)s %(message)s"
-    formatter = logging.Formatter(fmt)
-    handler.setFormatter(formatter)
-    logger = logging.getLogger('ttlzrb')
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
+    logging.config.fileConfig(rbcfg["logconf"])
+    logger = logging.getLogger("root")
     return logger
 
 logger = init_logger()

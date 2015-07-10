@@ -1,7 +1,7 @@
 #coding=utf8
 
 # log
-logpath = "/var/log/rb/ttlz-git.log"
+logconf = "/home/act/dev/gitrepo/rbhook/git/log.conf"
 
 # repo
 repo_path = "/home/act/dev/test/repo/git/rb"
