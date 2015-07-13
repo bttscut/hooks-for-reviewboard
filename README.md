@@ -40,6 +40,9 @@ for code review based on ReviewBoard
 ### usage
 使用者只需要将对应的仓库端参数和配置文件路径传给py脚本即可，具体的hook和cron脚本可以用很简单的shell脚本实现。
 
+### server端的补丁
+由于rb在server端引入了from__future__importunicode_literals，会导致普通的字符串在传递过程中转换为unicode，此时中文编码就会出现解码失败的问题，所以，我们要给服务器打个补丁，不涉及rb源码的修改。在rbsite生成的wsgi脚本中加入如下代码：`reload(sys) sys.setdefaultencoding("utf8")`
+
 ### svn
 在仓库端试用svnlook命令来生成diff并提交，因为仓库段有所有的信息，所以这样比较方便。
 
