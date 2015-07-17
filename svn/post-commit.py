@@ -25,7 +25,7 @@ rbcfg_path = sys.argv[1]
 repo = sys.argv[2]
 rev = sys.argv[3]
 
-INDEX_FILE_RE = re.compile(b'^Index: (.+?)(?:\t\((added|deleted)\))?\n$')
+INDEX_FILE_RE = re.compile(b'^Index: (.+?)(?:\s+\(.*\))?$')
 INDEX_SEP = b'=' * 67
 
 new_env = {}
